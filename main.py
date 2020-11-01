@@ -119,3 +119,6 @@ fig_inc.update_layout(title=f'Covid19 {n} days incidence in BS ',
                       yaxis_title='# cases', plot_bgcolor='rgba(0,0,0,0)', yaxis_gridcolor='rgba(0,0,0,0.05)')
 fig_inc.update_layout(hovermode="x unified")
 st.write(fig_inc)
+
+if st.checkbox("view Data",value=False):
+    st.write(df.sort_index(ascending=False))
