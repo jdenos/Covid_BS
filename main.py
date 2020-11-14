@@ -46,9 +46,7 @@ df = calc_df(df_base, n=n)
 
 today = df.index.max()
 yesterday = (dt.datetime.strptime(today, "%Y-%m-%d") - dt.timedelta(days=1)).strftime("%Y-%m-%d")
-
 last_update = dt.datetime.strptime(df.index.max(), '%Y-%m-%d').strftime('%d %b %Y')
-
 st.markdown(f'''
 # Covid19 cases in basel stadt 
 
@@ -81,44 +79,49 @@ col1, col2, col3 = st.beta_columns(3)
 col1.plotly_chart(fig_ind_abs, use_container_width=True)
 col2.plotly_chart(fig_ind_avg, use_container_width=True)
 col3.plotly_chart(fig_ind_inc, use_container_width=True)
-
-fig_cases = go.Figure()
-fig_cases.add_trace(go.Scatter(x=df.index, y=df.cases,
-                               mode='lines+markers',
-                               name='Cases',
-                               opacity=0.2,
-                               marker={'size': 3.5}))
-fig_cases.add_trace(
-    go.Scatter(x=df.sort_index().index, y=df['average_n'],
-               mode='lines+markers',
-               name=f'{n} days average',
-               line={
-                   'width': 2},
-               marker={'size': 3.5}))
-fig_cases.update_layout(title='Covid19 cases in BS ',
-                        xaxis_title='Date',
-                        yaxis_title='# cases', plot_bgcolor='rgba(0,0,0,0)', yaxis_gridcolor='rgba(0,0,0,0.05)')
-fig_cases.update_layout(hovermode="x unified")
 st.header('Evolution')
-st.plotly_chart(fig_cases, use_container_width=True)
 
-fig_inc = go.Figure()
-fig_inc.add_trace(go.Scatter(x=df.index, y=df.cases,
-                             mode='lines+markers',
-                             name='Cases',
-                             opacity=0.2,
-                             marker={'size':3.5}))
-fig_inc.add_trace(go.Scatter(x=df.sort_index().index, y=df['incidence_n'],
-                             mode='lines+markers',
-                             name=f'{n} days incidence (per 100000)',
-                             line={
-                        'width':2},
-                             marker={'size':3.5}))
-fig_inc.update_layout(title=f'Covid19 {n} days incidence in BS ',
-                      xaxis_title='Date',
-                      yaxis_title='# cases', plot_bgcolor='rgba(0,0,0,0)', yaxis_gridcolor='rgba(0,0,0,0.05)')
-fig_inc.update_layout(hovermode="x unified")
-st.write(fig_inc)
+view = st.radio('Do you want to see average cases or incidence',['Average','Incidence'])
+
+if view == 'Average':
+    fig_cases = go.Figure()
+    fig_cases.add_trace(go.Scatter(x=df.index, y=df.cases,
+                                   mode='lines+markers',
+                                   name='Cases',
+                                   opacity=0.2,
+                                   marker={'size': 3.5}))
+    fig_cases.add_trace(
+        go.Scatter(x=df.sort_index().index, y=df['average_n'],
+                   mode='lines+markers',
+                   name=f'{n} days average',
+                   line={
+                       'width': 2},
+                   marker={'size': 3.5}))
+    fig_cases.update_layout(title='Covid19 cases in BS ',
+                            xaxis_title='Date',
+                            yaxis_title='# cases', plot_bgcolor='rgba(0,0,0,0)', yaxis_gridcolor='rgba(0,0,0,0.05)')
+    fig_cases.update_layout(hovermode="x unified")
+
+    st.plotly_chart(fig_cases, use_container_width=True)
+
+elif view =='Incidence':
+    fig_inc = go.Figure()
+    fig_inc.add_trace(go.Scatter(x=df.index, y=df.cases,
+                                 mode='lines+markers',
+                                 name='Cases',
+                                 opacity=0.2,
+                                 marker={'size':3.5}))
+    fig_inc.add_trace(go.Scatter(x=df.sort_index().index, y=df['incidence_n'],
+                                 mode='lines+markers',
+                                 name=f'{n} days incidence (per 100000)',
+                                 line={
+                            'width':2},
+                                 marker={'size':3.5}))
+    fig_inc.update_layout(title=f'Covid19 {n} days incidence in BS ',
+                          xaxis_title='Date',
+                          yaxis_title='# cases', plot_bgcolor='rgba(0,0,0,0)', yaxis_gridcolor='rgba(0,0,0,0.05)')
+    fig_inc.update_layout(hovermode="x unified")
+    st.plotly_chart(fig_inc, use_container_width=True)
 
 if st.checkbox("view Data",value=False):
     st.write(df.sort_index(ascending=False))
