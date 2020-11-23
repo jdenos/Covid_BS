@@ -5,6 +5,8 @@ import plotly.graph_objs as go
 import requests
 import streamlit as st
 
+st.set_page_config(page_title='Covid Basel', page_icon='🦠', layout='wide')
+
 
 @st.cache(ttl=3600)
 def get_data():
@@ -14,9 +16,9 @@ def get_data():
     dico = [i['fields'] for i in js]
     data = pd.DataFrame(dico)
     data = data.set_index('date', drop=False)
-    data = data[['week', 'current_quarantined', 'ndiff_conf', 'current_isolated', 'ndiff_released', 'ndiff_deceased',
+    data = data[['week', 'current_quarantined', 'ndiff_conf', "ncumul_conf",'current_isolated', 'ndiff_released', 'ndiff_deceased',
                  'current_icu', 'current_hosp']]
-    data.rename({'ndiff_conf': 'cases', 'ndiff_released': 'released', 'ndiff_deceased': 'deceased'}, axis=1,
+    data.rename({'ndiff_conf': 'cases',"ncumul_conf":'total_cases', 'ndiff_released': 'released', 'ndiff_deceased': 'deceased'}, axis=1,
                 inplace=True)
     data.sort_index(inplace=True)
     data['average_7'] = data['cases'].rolling(7).mean()
@@ -75,13 +77,29 @@ fig_ind_inc = go.Figure(go.Indicator(
     delta={'position': "top", 'reference': df.loc[yesterday]['incidence_14']}))
 fig_ind_inc.update_layout(title='14 days incidence')
 
+fig_ind_cumul = go.Figure(go.Indicator(
+    mode="number",
+    value=df.loc[today]['total_cases']))
+fig_ind_cumul.update_layout(title='Total cases')
+
+fig_ind_cumul_pop = go.Figure(go.Indicator(
+    mode="number",
+    value=df.loc[today]['total_cases']/pop*100000))
+fig_ind_cumul_pop.update_layout(title="Total cases per 100'000")
+
 col1, col2, col3 = st.beta_columns(3)
 col1.plotly_chart(fig_ind_abs, use_container_width=True)
 col2.plotly_chart(fig_ind_avg, use_container_width=True)
 col3.plotly_chart(fig_ind_inc, use_container_width=True)
+
+st.markdown('##### Since the begining of the pandemics')
+col1, col2 = st.beta_columns(2)
+col1.plotly_chart(fig_ind_cumul,use_container_width=True)
+col2.plotly_chart(fig_ind_cumul_pop,use_container_width=True)
+
 st.header('Evolution')
 
-view = st.radio('Do you want to see average cases or incidence',['Average','Incidence'])
+view = st.radio('Do you want to see average cases or incidence', ['Average', 'Incidence','Cumulative'])
 
 if view == 'Average':
     fig_cases = go.Figure()
@@ -104,24 +122,36 @@ if view == 'Average':
 
     st.plotly_chart(fig_cases, use_container_width=True)
 
-elif view =='Incidence':
+elif view == 'Incidence':
     fig_inc = go.Figure()
     fig_inc.add_trace(go.Scatter(x=df.index, y=df.cases,
                                  mode='lines+markers',
                                  name='Cases',
                                  opacity=0.2,
-                                 marker={'size':3.5}))
+                                 marker={'size': 3.5}))
     fig_inc.add_trace(go.Scatter(x=df.sort_index().index, y=df['incidence_n'],
                                  mode='lines+markers',
                                  name=f'{n} days incidence (per 100000)',
                                  line={
-                            'width':2},
-                                 marker={'size':3.5}))
+                                     'width': 2},
+                                 marker={'size': 3.5}))
     fig_inc.update_layout(title=f'Covid19 {n} days incidence in BS ',
                           xaxis_title='Date',
                           yaxis_title='# cases', plot_bgcolor='rgba(0,0,0,0)', yaxis_gridcolor='rgba(0,0,0,0.05)')
     fig_inc.update_layout(hovermode="x unified")
     st.plotly_chart(fig_inc, use_container_width=True)
 
-if st.checkbox("view Data",value=False):
+elif view == 'Cumulative':
+    fig_cumul =go.Figure()
+    fig_cumul.add_trace(go.Scatter(x=df.index, y=df['total_cases'],
+                                 mode='lines+markers',
+                                 name='Cumulative Cases',
+                                 marker={'size': 3.5}))
+    fig_cumul.update_layout(title=f'Covid19 cumulative cases in BS ',
+                          xaxis_title='Date',
+                          yaxis_title='# cases', plot_bgcolor='rgba(0,0,0,0)', yaxis_gridcolor='rgba(0,0,0,0.05)')
+    fig_cumul.update_layout(hovermode="x unified")
+    st.plotly_chart(fig_cumul, use_container_width=True)
+
+if st.checkbox("view Data", value=False):
     st.write(df.sort_index(ascending=False))
