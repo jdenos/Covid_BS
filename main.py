@@ -21,8 +21,8 @@ def get_data():
     data.rename({'ndiff_conf': 'cases',"ncumul_conf":'total_cases', 'ndiff_released': 'released', 'ndiff_deceased': 'deceased'}, axis=1,
                 inplace=True)
     data.sort_index(inplace=True)
-    data['average_7'] = data['cases'].rolling(7).mean()
-    data['incidence_14'] = data['cases'].rolling(14).sum() / pop * 100000
+    #data['average_7'] = data['cases'].rolling(7).mean()
+    #data['incidence_14'] = data['cases'].rolling(14).sum() / pop * 100000
     return data
 
 
@@ -30,21 +30,22 @@ def get_data():
 if st.sidebar.button('clear cache'):
     st.caching.clear_cache()
 st.sidebar.header('Time smoothing')
-n = st.sidebar.slider("on how many days would you like to smooth your data", min_value=1, max_value=21, step=1, value=7)
+n_average = st.sidebar.slider("on how many days would you like to smooth your average data", min_value=1, max_value=21, step=1, value=7)
+n_incidence = st.sidebar.slider("On how many days would you like to smooth your incidence data ", min_value=1, max_value=21, step=1, value=14)
 pop = 201469
 
 df_base = get_data()
 
 
 @st.cache(ttl=3600)
-def calc_df(data, n=14):
+def calc_df(data, n_average=7, n_incidence=14):
     df2 = data.copy()
-    df2['average_n'] = df2['cases'].rolling(n).mean()
-    df2['incidence_n'] = df2['cases'].rolling(n).sum() / pop * 100000
+    df2['average_n'] = df2['cases'].rolling(n_average).mean()
+    df2['incidence_n'] = df2['cases'].rolling(n_incidence).sum() / pop * 100000
     return df2
 
 
-df = calc_df(df_base, n=n)
+df = calc_df(df_base, n_average=n_average,n_incidence=n_incidence)
 
 today = df.index.max()
 yesterday = (dt.datetime.strptime(today, "%Y-%m-%d") - dt.timedelta(days=1)).strftime("%Y-%m-%d")
@@ -54,10 +55,9 @@ st.markdown(f'''
 
 This dashboard show the evolution of covid in the canton of basel stadt
 
-last data updated on the {last_update}
+last data updated on the **{last_update}**
 
 ## indicators 
-Those indicators will not be affected by the filters
 ''')
 fig_ind_abs = go.Figure(go.Indicator(
     mode="number+delta",
@@ -67,15 +67,15 @@ fig_ind_abs.update_layout(title="today's cases")
 
 fig_ind_avg = go.Figure(go.Indicator(
     mode="number+delta",
-    value=df.loc[today]['average_7'],
-    delta={'position': "top", 'reference': df.loc[yesterday]['average_7']}))
-fig_ind_avg.update_layout(title='7 days avg')
+    value=df.loc[today]['average_n'],
+    delta={'position': "top", 'reference': df.loc[yesterday]['average_n']}))
+fig_ind_avg.update_layout(title=f'{n_average} days avg')
 
 fig_ind_inc = go.Figure(go.Indicator(
     mode="number+delta",
-    value=df.loc[today]['incidence_14'],
-    delta={'position': "top", 'reference': df.loc[yesterday]['incidence_14']}))
-fig_ind_inc.update_layout(title='14 days incidence')
+    value=df.loc[today]['incidence_n'],
+    delta={'position': "top", 'reference': df.loc[yesterday]['incidence_n']}))
+fig_ind_inc.update_layout(title=f'{n_incidence} days incidence')
 
 fig_ind_cumul = go.Figure(go.Indicator(
     mode="number",
@@ -85,14 +85,14 @@ fig_ind_cumul.update_layout(title='Total cases')
 fig_ind_cumul_pop = go.Figure(go.Indicator(
     mode="number",
     value=df.loc[today]['total_cases']/pop*100000))
-fig_ind_cumul_pop.update_layout(title="Total cases per 100'000")
+fig_ind_cumul_pop.update_layout(title="Total cases per 100'000 inhabitants")
 
 col1, col2, col3 = st.beta_columns(3)
 col1.plotly_chart(fig_ind_abs, use_container_width=True)
 col2.plotly_chart(fig_ind_avg, use_container_width=True)
 col3.plotly_chart(fig_ind_inc, use_container_width=True)
 
-st.markdown('##### Since the begining of the pandemics')
+st.markdown('##### Since the beginning of the pandemics')
 col1, col2 = st.beta_columns(2)
 col1.plotly_chart(fig_ind_cumul,use_container_width=True)
 col2.plotly_chart(fig_ind_cumul_pop,use_container_width=True)
@@ -111,7 +111,7 @@ if view == 'Average':
     fig_cases.add_trace(
         go.Scatter(x=df.sort_index().index, y=df['average_n'],
                    mode='lines+markers',
-                   name=f'{n} days average',
+                   name=f'{n_average} days average',
                    line={
                        'width': 2},
                    marker={'size': 3.5}))
@@ -124,18 +124,13 @@ if view == 'Average':
 
 elif view == 'Incidence':
     fig_inc = go.Figure()
-    fig_inc.add_trace(go.Scatter(x=df.index, y=df.cases,
-                                 mode='lines+markers',
-                                 name='Cases',
-                                 opacity=0.2,
-                                 marker={'size': 3.5}))
     fig_inc.add_trace(go.Scatter(x=df.sort_index().index, y=df['incidence_n'],
                                  mode='lines+markers',
-                                 name=f'{n} days incidence (per 100000)',
+                                 name=f'{n_incidence} days incidence (per 100000)',
                                  line={
                                      'width': 2},
                                  marker={'size': 3.5}))
-    fig_inc.update_layout(title=f'Covid19 {n} days incidence in BS ',
+    fig_inc.update_layout(title=f'Covid19 {n_incidence} days incidence in BS ',
                           xaxis_title='Date',
                           yaxis_title='# cases', plot_bgcolor='rgba(0,0,0,0)', yaxis_gridcolor='rgba(0,0,0,0.05)')
     fig_inc.update_layout(hovermode="x unified")
