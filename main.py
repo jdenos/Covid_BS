@@ -8,7 +8,7 @@ import streamlit as st
 st.set_page_config(page_title='Covid Basel', page_icon='🦠', layout='wide')
 
 
-@st.cache(ttl=3600)
+@st.cache(ttl=3600,show_spinner=False)
 def get_data():
     req = requests.get(
         'https://data.bs.ch/api/records/1.0/search/?dataset=100073&q=&rows=800&sort=timestamp&facet=timestamp')
@@ -21,8 +21,6 @@ def get_data():
     data.rename({'ndiff_conf': 'cases',"ncumul_conf":'total_cases', 'ndiff_released': 'released', 'ndiff_deceased': 'deceased'}, axis=1,
                 inplace=True)
     data.sort_index(inplace=True)
-    #data['average_7'] = data['cases'].rolling(7).mean()
-    #data['incidence_14'] = data['cases'].rolling(14).sum() / pop * 100000
     return data
 
 
@@ -37,7 +35,7 @@ pop = 201469
 df_base = get_data()
 
 
-@st.cache(ttl=3600)
+@st.cache(ttl=3600, show_spinner=False)
 def calc_df(data, n_average=7, n_incidence=14):
     df2 = data.copy()
     df2['average_n'] = df2['cases'].rolling(n_average).mean()
@@ -92,7 +90,7 @@ col1.plotly_chart(fig_ind_abs, use_container_width=True)
 col2.plotly_chart(fig_ind_avg, use_container_width=True)
 col3.plotly_chart(fig_ind_inc, use_container_width=True)
 
-st.markdown('##### Since the beginning of the pandemics')
+st.markdown('### Since the beginning of the pandemics')
 col1, col2 = st.beta_columns(2)
 col1.plotly_chart(fig_ind_cumul,use_container_width=True)
 col2.plotly_chart(fig_ind_cumul_pop,use_container_width=True)
@@ -100,6 +98,7 @@ col2.plotly_chart(fig_ind_cumul_pop,use_container_width=True)
 st.header('Evolution')
 
 view = st.radio('Do you want to see average cases or incidence', ['Average', 'Incidence','Cumulative'])
+
 
 if view == 'Average':
     fig_cases = go.Figure()
@@ -147,6 +146,5 @@ elif view == 'Cumulative':
                           yaxis_title='# cases', plot_bgcolor='rgba(0,0,0,0)', yaxis_gridcolor='rgba(0,0,0,0.05)')
     fig_cumul.update_layout(hovermode="x unified")
     st.plotly_chart(fig_cumul, use_container_width=True)
-
 if st.checkbox("view Data", value=False):
     st.write(df.sort_index(ascending=False))
