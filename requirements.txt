@@ -1,5 +1,6 @@
 pandas~=1.1.4
 plotly~=4.13.0
 requests~=2.25.0
-streamlit~=0.71.0
-click~=8.0.4
+streamlit~=0.71.0 
+click~=8.0.4 ## for streamlit cloud bug 
+protobuf~=3.19.0 ## for stramlit cloud bug
